@@ -258,27 +258,40 @@
       let rows = await loadEntries();
       rows.sort((a,b)=> a.name.localeCompare(b.name, 'ko'));
       if (state.filter !== 'ALL') rows = rows.filter(r=>r.person===state.filter);
+
       const groups = ['김효주','김영숙','권수경'];
-      const html = groups
-        .filter(g=> state.filter==='ALL' ? true : g===state.filter)
-        .map(g=>{
-          const items = rows.filter(r=>r.person===g);
-          const listHtml = items.length===0 ? '<div class="muted">항목이 없습니다</div>' : items.map(r=> itemHTML(r)).join('');
-          return `<div class="group"><h3>${g}</h3>${listHtml}</div>`
-        }).join('');
-      container.innerHTML = html || '<div class="muted">등록된 항목이 없습니다.</div>';
+      let html = '';
+
+      if (state.filter === 'ALL') {
+        // 전체 보기: 그룹 제목 없이 모두 출력
+        const allItems = rows.map(r => itemHTML(r)).join('');
+        html = allItems || '<div class="muted">등록된 항목이 없습니다.</div>';
+      } else {
+        // 특정 담당자 보기: 해당 담당자 제목과 목록
+        html = groups
+          .filter(g => g === state.filter)
+          .map(g=>{
+            const items = rows.filter(r=>r.person===g);
+            const listHtml = items.length===0 ? '<div class="muted">항목이 없습니다</div>' : items.map(r=> itemHTML(r)).join('');
+            return `<div class="group"><h3>${g}</h3>${listHtml}</div>`
+          }).join('');
+      }
+
+      container.innerHTML = html;
     }
 
+    // 항목 카드 (담당 칩 제거 버전)
     function itemHTML(r){
       return `<div class="item">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:600">${r.name || '(이름없음)'}</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-weight:600">${r.name || '(이름없음)'}</div>
+        </div>
         <div class="meta">
-          <span class="chip">담당: ${r.person}</span>
           <span class="chip">성별: ${r.gender}</span>
-          ${r.age?`<span class=\"chip\">나이: ${r.age}</span>`:""}
+          ${r.age?`<span class="chip">나이: ${r.age}</span>`:""}
           <a class="chip" href="tel:${(r.phone || '').replace(/[^0-9]/g,'')}">전화: ${r.phone}</a>
         </div>
-      </div>`
+      </div>`;
     }
 
     // ===== 입력창 접기/펼치기 =====
@@ -311,26 +324,22 @@
         } else {
           formBody.removeAttribute('hidden');
           formBody.style.maxHeight = formBody.scrollHeight + 'px';
-          // 이후 자동으로 height를 auto로
           requestAnimationFrame(()=>{ formBody.style.maxHeight = 'none'; });
         }
         return;
       }
 
       if (isCollapsed){
-        // 현재 높이에서 0으로
         formBody.style.maxHeight = formBody.scrollHeight + 'px';
         requestAnimationFrame(()=>{
           formBody.style.maxHeight = '0px';
           formBody.setAttribute('hidden','');
         });
       } else {
-        // hidden 해제 후 0에서 실제 높이로
         formBody.removeAttribute('hidden');
         formBody.style.maxHeight = '0px';
         requestAnimationFrame(()=>{
           formBody.style.maxHeight = formBody.scrollHeight + 'px';
-          // 트랜지션 종료 후 auto로 정리
           formBody.addEventListener('transitionend', function handler(e){
             if (e.propertyName === 'max-height'){
               formBody.style.maxHeight = 'none';
@@ -344,7 +353,7 @@
     render();
   </script>
 
-  <!-- ===== Firebase SDK + 초기화: 공유 저장소 사용 (쓰기 모두 허용하려면 콘솔 규칙도 열어두세요) ===== -->
+  <!-- ===== Firebase SDK + 초기화 ===== -->
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
   <script>
