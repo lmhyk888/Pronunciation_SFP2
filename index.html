@@ -48,7 +48,7 @@
     .field input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:16px}
 
     /* List */
-    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
     .group{margin-top:16px}
     .group h3{margin:0 0 10px;font-size:18px;color:#1f2937}
     .item{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
@@ -69,12 +69,16 @@
     .item.confirmed{border-color:var(--active);box-shadow:0 8px 20px rgba(241,90,41,.12)}
     .badge-confirm{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
 
-    /* ★ 옵션2: 컬러 CSS별 + 애니메이션 */
+    /* 옵션2: 컬러 CSS별 + 애니메이션 */
     .confirm-btn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);color:#374151}
     .confirm-btn .star{font-size:15px;color:#d1d5db;transition:color .2s ease, transform .2s ease}
     .confirm-btn.on{background:#fff8e1;border-color:#fde68a;color:#92400e}
     .confirm-btn.on .star{color:#facc15;transform:scale(1.15) rotate(-10deg)}
-    .confirm-btn[aria-pressed="true"]{background:#fff8e1;border-color:#fde68a;color:#92400e}
+
+    /* Auth chips */
+    .authbox{display:flex;align-items:center;gap:8px}
+    .avatar{width:24px;height:24px;border-radius:999px;background:#eee;display:inline-block;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover}
   </style>
 </head>
 <body>
@@ -128,11 +132,19 @@
     <div class="card p16" style="margin-top:12px">
       <div class="toolbar">
         <h2 style="margin:0;font-size:18px">목록</h2>
+
+        <!-- 보기 필터 -->
         <div class="btn-group" role="group" aria-label="보기 필터" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn filter primary" data-filter="ALL">전체</button>
           <button class="btn filter" data-filter="김효주">김효주</button>
           <button class="btn filter" data-filter="김영숙">김영숙</button>
           <button class="btn filter" data-filter="권수경">권수경</button>
+        </div>
+
+        <!-- 로그인 영역 -->
+        <div class="authbox" id="authBox" style="margin-left:auto">
+          <span id="authStatus" class="muted">로그인 필요</span>
+          <button id="authBtn" class="btn">Google 로그인</button>
         </div>
       </div>
       <div id="list"></div>
@@ -143,7 +155,12 @@
     // ===== Firebase 사용 여부 =====
     const useFirebase = !!window.__USE_FIREBASE__ && typeof window.__firebaseInit === 'function';
     let fs = null;
-    if (useFirebase){ fs = window.__firebaseInit(); }
+    let authApi = null; // auth helpers
+    if (useFirebase){ 
+      const inited = window.__firebaseInit(); 
+      fs = inited;
+      authApi = inited.auth;
+    }
 
     const STORAGE_KEY = 'entries.v1';
     const COLLAPSE_KEY = 'form.collapsed.v1';
@@ -251,24 +268,20 @@
       if (raw.length <= 3) {
         // 그대로
       } else if (raw.length <= 7) {
-        // 3-? 또는 4-?
         if (isMobile3) {
           v = raw.slice(0,3) + '-' + raw.slice(3);
         } else {
           v = raw.slice(0,4) + '-' + raw.slice(4);
         }
       } else if (raw.length <= 11) {
-        // 11자리: 휴대폰(3-4-4) 우선, 아니면 4-3-4
         if (isMobile3) {
           v = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7);
         } else {
           v = raw.slice(0,4) + '-' + raw.slice(4,7) + '-' + raw.slice(7);
         }
       } else if (raw.length <= 12) {
-        // 12자리: 4-4-4
         v = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8);
       } else {
-        // 13~16자리: 4-4-4-나머지 (최대 4)
         v = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8,12) + '-' + raw.slice(12);
       }
 
@@ -337,6 +350,27 @@
     // ===== 렌더링 =====
     async function render(){
       const container = $('#list');
+      // 로그인 검증: Firebase 사용 시에만 적용. (로컬스토리지 모드면 계속 보임)
+      if (useFirebase){
+        const user = authApi.currentUser();
+        // 목록 접근 차단
+        if (!user){
+          container.innerHTML = `
+            <div class="muted" style="display:flex;align-items:center;gap:8px">
+              목록은 <strong>로그인한 사용자</strong>만 볼 수 있어요. 오른쪽 상단의 <em>Google 로그인</em> 버튼을 눌러 주세요.
+            </div>`;
+          // 상단 상태도 갱신
+          $('#authStatus').textContent = '로그인 필요';
+          $('#authBtn').textContent = 'Google 로그인';
+          return;
+        } else {
+          // 로그인 상태 표시
+          const prof = user.providerData?.[0];
+          $('#authStatus').textContent = prof?.email || user.email || '로그인됨';
+          $('#authBtn').textContent = '로그아웃';
+        }
+      }
+
       container.innerHTML = '<div class="muted">불러오는 중...</div>';
       let rows = await loadEntries();
       rows.sort((a,b)=> a.name.localeCompare(b.name, 'ko'));
@@ -346,11 +380,9 @@
       let html = '';
 
       if (state.filter === 'ALL') {
-        // 전체 보기: 그룹 제목 없이 모두 출력
         const allItems = rows.map(r => itemHTML(r)).join('');
         html = allItems || '<div class="muted">등록된 항목이 없습니다.</div>';
       } else {
-        // 특정 담당자 보기
         html = groups
           .filter(g => g === state.filter)
           .map(g=>{
@@ -363,7 +395,7 @@
       container.innerHTML = html;
     }
 
-    // 항목 카드 (확정 표시 포함, 옵션2 별 버튼)
+    // 카드 템플릿
     function itemHTML(r){
       const pressed = r.confirmed ? 'true' : 'false';
       const onClass = r.confirmed ? 'on' : '';
@@ -436,12 +468,31 @@
       }
     }
 
+    // ====== Auth UI ======
+    const authBtn = $('#authBtn');
+    authBtn?.addEventListener('click', async ()=>{
+      if (!useFirebase) return;
+      const user = authApi.currentUser();
+      try{
+        if (user){
+          await authApi.signOut();
+        }else{
+          await authApi.signInWithGoogle();
+        }
+      }catch(e){
+        console.error(e);
+        alert('인증 중 오류가 발생했습니다');
+      }
+    });
+
+    // 최초 렌더
     render();
   </script>
 
   <!-- ===== Firebase SDK + 초기화 ===== -->
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
   <script>
     // 공유 저장소 사용 ON
     window.__USE_FIREBASE__ = true;
@@ -455,17 +506,46 @@
       };
       const app = firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
+      const auth = firebase.auth();
+
+      // --- Auth helpers (compat) ---
+      const provider = new firebase.auth.GoogleAuthProvider();
+      function signInWithGoogle(){
+        return auth.signInWithPopup(provider);
+      }
+      function signOut(){
+        return auth.signOut();
+      }
+      function currentUser(){
+        return auth.currentUser;
+      }
+      // 상태 변화 시 목록/헤더 갱신
+      auth.onAuthStateChanged(()=>{
+        const u = currentUser();
+        const status = document.getElementById('authStatus');
+        const btn = document.getElementById('authBtn');
+        if (status) status.textContent = u ? (u.email || '로그인됨') : '로그인 필요';
+        if (btn) btn.textContent = u ? '로그아웃' : 'Google 로그인';
+        // 목록 다시 그림 (비로그인->로그인 전환 시)
+        if (typeof window !== 'undefined' && typeof render === 'function'){
+          render();
+        }
+      });
+
       return {
         db,
+        // Firestore helpers
         collection: (db, name) => db.collection(name),
         addDoc: (col, data) => col.add(data),
         getDocs: (q) => q.get(),
         serverTimestamp: () => firebase.firestore.FieldValue.serverTimestamp(),
         orderBy: (field, dir) => ({ field, dir }),
         query: (col, ord) => col.orderBy(ord.field, ord.dir),
-        // 업데이트용
         doc: (col, id) => col.doc(id),
         updateDoc: (docRef, data) => docRef.update(data),
+
+        // Auth helpers
+        auth: { signInWithGoogle, signOut, currentUser }
       };
     };
   </script>
