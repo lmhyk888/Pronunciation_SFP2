@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>업로드 폼</title>
   <style>
-    /* ==== Design refresh (clean, airy, mobile-first) ==== */
     :root{
       --bg:#ffffff;
       --card:#ffffff;
       --muted:#6b7280;
       --text:#0f172a;
-      --active:#f15a29;    /* brand orange */
-      --ring:#f97316;      /* focus ring */
+      --active:#f15a29;
+      --ring:#f97316;
       --line:#e5e7eb;
       --chip:#f3f4f6;
       --shadow:0 8px 30px rgba(15,23,42,.07);
@@ -33,6 +32,7 @@
     .btn[aria-pressed="true"], .btn.primary{background:var(--active);border-color:var(--active);color:#fff;box-shadow:0 6px 20px rgba(241,90,41,.25)}
     .btn:active{transform:translateY(0)}
     .btn:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(249,115,22,.35)}
+    .iconbtn{padding:8px 10px;border-radius:12px;font-size:13px}
 
     /* Layout */
     .grid{display:grid;grid-template-columns:1fr;gap:12px}
@@ -51,19 +51,24 @@
     .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
     .group{margin-top:16px}
     .group h3{margin:0 0 10px;font-size:18px;color:#1f2937}
-    .item{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;transition:transform .15s ease, box-shadow .15s ease}
+    .item{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
     .item:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,23,42,.06)}
-    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px dashed var(--line);color:#374151;border-radius:999px;padding:6px 10px;font-size:12px}
     .meta{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px dashed var(--line);color:#374151;border-radius:999px;padding:6px 10px;font-size:12px}
     .sticky{position:sticky;top:0;z-index:10;background:transparent;backdrop-filter:saturate(140%) blur(6px)}
 
-    /* === Collapsible (입력창 접기/펼치기) === */
+    /* Collapsible */
     .card-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .collapsible{overflow:hidden;transition:max-height .25s ease, opacity .2s ease}
     .collapsible[hidden]{display:block;max-height:0 !important;padding-top:0 !important;margin-top:0 !important;opacity:.0}
     .collapsible:not([hidden]){opacity:1}
     .toggle-rotate{transition:transform .2s ease}
     .is-collapsed .toggle-rotate{transform:rotate(180deg)}
+
+    /* Confirmed style */
+    .item.confirmed{border-color:var(--active);box-shadow:0 8px 20px rgba(241,90,41,.12)}
+    .badge-confirm{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+    .confirm-btn[aria-pressed="true"]{background:var(--active);border-color:var(--active);color:#fff}
   </style>
 </head>
 <body>
@@ -78,7 +83,6 @@
       </div>
       <div class="hr" style="height:1px;background:var(--line);margin:16px 0"></div>
 
-      <!-- ==== 접힘 대상 시작 ==== -->
       <div id="formBody" class="collapsible">
         <!-- 담당자 선택 -->
         <div class="section">
@@ -111,7 +115,6 @@
           <button id="clear" class="btn">입력 초기화</button>
         </div>
       </div>
-      <!-- ==== 접힘 대상 끝 ==== -->
     </div>
 
     <div class="card p16" style="margin-top:12px">
@@ -129,7 +132,7 @@
   </div>
 
   <script type="module">
-    // ===== Firebase 사용 여부 (켜면 여러 기기에서 같은 목록 공유) =====
+    // ===== Firebase 사용 여부 =====
     const useFirebase = !!window.__USE_FIREBASE__ && typeof window.__firebaseInit === 'function';
     let fs = null;
     if (useFirebase){ fs = window.__firebaseInit(); }
@@ -137,21 +140,45 @@
     const STORAGE_KEY = 'entries.v1';
     const COLLAPSE_KEY = 'form.collapsed.v1';
 
+    const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
+    const $ = (sel,ctx=document)=>ctx.querySelector(sel);
+
+    // ===== ID 생성 =====
+    function uid(){ return (Date.now().toString(36)+Math.random().toString(36).slice(2,8)); }
+
     // ===== 저장 =====
     async function saveEntry(data){
+      const payload = { ...data, confirmed: false }; // 기본은 미확정
       if (useFirebase){
         const col = fs.collection(fs.db,'entries');
-        await fs.addDoc(col, { ...data, createdAt: fs.serverTimestamp() });
-        return true;
+        const ref = await fs.addDoc(col, { ...payload, createdAt: fs.serverTimestamp() });
+        return ref.id;
       } else {
         const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        list.push({ ...data, createdAt: Date.now() });
+        const id = uid();
+        list.push({ id, ...payload, createdAt: Date.now() });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-        return true;
+        return id;
       }
     }
 
-    // ===== 불러오기 =====
+    // ===== 부분 업데이트 =====
+    async function updateEntry(id, partial){
+      if (useFirebase){
+        const col = fs.collection(fs.db,'entries');
+        const docRef = fs.doc(col, id);
+        await fs.updateDoc(docRef, partial);
+      } else {
+        const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const idx = list.findIndex(x=>x.id===id);
+        if (idx>-1){
+          list[idx] = { ...list[idx], ...partial };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        }
+      }
+    }
+
+    // ===== 불러오기 (+마이그레이션: id/confirmed 보장) =====
     async function loadEntries(){
       if (useFirebase){
         const col = fs.collection(fs.db,'entries');
@@ -160,18 +187,30 @@
         const rows = [];
         snap.forEach(doc=>{
           const d = doc.data();
-          rows.push({ person:d.person, name:d.name, gender:d.gender, age:d.age, phone:d.phone, createdAt:d.createdAt?.toMillis?.() ?? Date.now() })
+          rows.push({
+            id: doc.id,
+            person:d.person, name:d.name, gender:d.gender,
+            age:d.age ?? null, phone:d.phone ?? '',
+            confirmed: !!d.confirmed,
+            createdAt:d.createdAt?.toMillis?.() ?? Date.now()
+          })
         });
         return rows;
       } else {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let changed = false;
+        list = list.map((r,i)=>{
+          if (!r.id){ r.id = uid(); changed = true; }
+          if (typeof r.confirmed !== 'boolean'){ r.confirmed = false; changed = true; }
+          return r;
+        });
+        if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        return list;
       }
     }
 
     // ===== 상태 & 헬퍼 =====
     let state = { person: '김효주', gender: '여', filter: 'ALL' };
-    const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
-    const $ = (sel,ctx=document)=>ctx.querySelector(sel);
 
     function bindSingleSelect(selector, stateKey){
       $$(selector).forEach(btn=>{
@@ -192,20 +231,19 @@
       $('#phone').value='';
     });
 
-    // 전화번호 입력: 숫자만, 최대 16자리, 4-3-4 / 4-4-4 / 4-4-4-4 자동 하이픈
+    // 전화번호 입력 마스킹
     $('#phone')?.addEventListener('input', (e)=>{
       const raw = e.target.value.replace(/[^0-9]/g,'').slice(0,16);
       let v = raw;
       if (v.length <= 4) {
-        // 4
       } else if (v.length <= 7) {
-        v = v.slice(0,4) + '-' + v.slice(4);              // 4-3
+        v = v.slice(0,4) + '-' + v.slice(4);
       } else if (v.length <= 11) {
-        v = v.slice(0,4) + '-' + v.slice(4,7) + '-' + v.slice(7); // 4-3-4
+        v = v.slice(0,4) + '-' + v.slice(4,7) + '-' + v.slice(7);
       } else if (v.length <= 12) {
-        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8); // 4-4-4
+        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8);
       } else {
-        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8,12) + '-' + v.slice(12); // 4-4-4-4
+        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8,12) + '-' + v.slice(12);
       }
       e.target.value = v;
     });
@@ -219,8 +257,6 @@
 
       if (!name) return [false,'이름을 입력해주세요'];
       if (age && (isNaN(Number(age)) || Number(age) < 0 || Number(age) > 120)) return [false,'나이를 0~120 사이 숫자로 입력'];
-
-      // 허용: 4-3-4 (11) / 4-4-4 (12) / 4-4-4-4 (16)
       if (!(digitsOnly.length===11 || digitsOnly.length===12 || digitsOnly.length===16)) return [false,'전화번호는 4-3-4 / 4-4-4 / 4-4-4-4 형식이어야 합니다'];
       if (!/^\d{4}-(\d{3}|\d{4})-\d{4}(-\d{4})?$/.test(phone)) return [false,'전화번호는 4-3(또는4)-4(-4) 형식이어야 합니다'];
 
@@ -251,7 +287,22 @@
       render();
     }));
 
-    // 렌더링
+    // ====== 아이템 영역 이벤트 위임: 확정 토글 ======
+    $('#list').addEventListener('click', async (e)=>{
+      const btn = e.target.closest('.confirm-btn');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const current = btn.getAttribute('aria-pressed') === 'true';
+      try{
+        await updateEntry(id, { confirmed: !current });
+        await render();
+      }catch(err){
+        console.error(err);
+        alert('상태 업데이트 중 오류가 발생했습니다');
+      }
+    });
+
+    // ===== 렌더링 =====
     async function render(){
       const container = $('#list');
       container.innerHTML = '<div class="muted">불러오는 중...</div>';
@@ -267,7 +318,7 @@
         const allItems = rows.map(r => itemHTML(r)).join('');
         html = allItems || '<div class="muted">등록된 항목이 없습니다.</div>';
       } else {
-        // 특정 담당자 보기: 해당 담당자 제목과 목록
+        // 특정 담당자 보기
         html = groups
           .filter(g => g === state.filter)
           .map(g=>{
@@ -280,16 +331,20 @@
       container.innerHTML = html;
     }
 
-    // 항목 카드 (담당 칩 제거 버전)
+    // 항목 카드 (확정 표시 포함)
     function itemHTML(r){
-      return `<div class="item">
+      return `<div class="item ${r.confirmed ? 'confirmed':''}">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div style="font-weight:600">${r.name || '(이름없음)'}</div>
+          <button class="btn iconbtn confirm-btn" data-id="${r.id}" aria-pressed="${r.confirmed ? 'true':'false'}" title="면접 확정 토글">
+            ${r.confirmed ? '★ 확정' : '☆ 확정'}
+          </button>
         </div>
         <div class="meta">
           <span class="chip">성별: ${r.gender}</span>
           ${r.age?`<span class="chip">나이: ${r.age}</span>`:""}
           <a class="chip" href="tel:${(r.phone || '').replace(/[^0-9]/g,'')}">전화: ${r.phone}</a>
+          ${r.confirmed ? `<span class="chip badge-confirm">면접 확정</span>` : ''}
         </div>
       </div>`;
     }
@@ -300,18 +355,15 @@
     const toggleText = $('#toggleText');
     const formCard = $('#formCard');
 
-    // 접힘 상태 복원
     let collapsed = localStorage.getItem(COLLAPSE_KEY) === '1';
     applyCollapse(collapsed, false);
 
-    // 버튼 동작
     toggleBtn.addEventListener('click', ()=>{
       collapsed = !collapsed;
       applyCollapse(collapsed, true);
       localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
     });
 
-    // max-height 애니메이션을 위한 보조 함수
     function applyCollapse(isCollapsed, animate){
       toggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
       toggleText.textContent = isCollapsed ? '입력창 펼치기' : '입력창 접기';
@@ -360,14 +412,8 @@
     // 공유 저장소 사용 ON
     window.__USE_FIREBASE__ = true;
 
-    // Firestore 규칙은 콘솔에서 읽기/쓰기 허용으로 설정해야 합니다.
-    // (프로토타입 규칙 예시)
-    // rules_version = '2';
-    // service cloud.firestore {
-    //   match /databases/{database}/documents {
-    //     match /{document=**} { allow read, write: if true; }
-    //   }
-    // }
+    // Firestore 보안 규칙은 콘솔에서 읽기/쓰기 허용으로 설정해야 합니다(프로토타입).
+    // 배포 전에 반드시 제한 규칙으로 교체하세요.
 
     // 우리 코드가 기대하는 초기화 함수
     window.__firebaseInit = function(){
@@ -386,6 +432,9 @@
         serverTimestamp: () => firebase.firestore.FieldValue.serverTimestamp(),
         orderBy: (field, dir) => ({ field, dir }),
         query: (col, ord) => col.orderBy(ord.field, ord.dir),
+        // 업데이트용
+        doc: (col, id) => col.doc(id),
+        updateDoc: (docRef, data) => docRef.update(data),
       };
     };
   </script>
