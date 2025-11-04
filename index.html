@@ -69,16 +69,14 @@
     .item.confirmed{border-color:var(--active);box-shadow:0 8px 20px rgba(241,90,41,.12)}
     .badge-confirm{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
 
-    /* 옵션2: 컬러 CSS별 + 애니메이션 */
+    /* confirm button */
     .confirm-btn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);color:#374151}
     .confirm-btn .star{font-size:15px;color:#d1d5db;transition:color .2s ease, transform .2s ease}
     .confirm-btn.on{background:#fff8e1;border-color:#fde68a;color:#92400e}
     .confirm-btn.on .star{color:#facc15;transform:scale(1.15) rotate(-10deg)}
 
-    /* Auth chips */
+    /* Auth UI */
     .authbox{display:flex;align-items:center;gap:8px}
-    .avatar{width:24px;height:24px;border-radius:999px;background:#eee;display:inline-block;overflow:hidden}
-    .avatar img{width:100%;height:100%;object-fit:cover}
   </style>
 </head>
 <body>
@@ -155,9 +153,11 @@
     // ===== Firebase 사용 여부 =====
     const useFirebase = !!window.__USE_FIREBASE__ && typeof window.__firebaseInit === 'function';
     let fs = null;
-    let authApi = null; // auth helpers
-    if (useFirebase){ 
-      const inited = window.__firebaseInit(); 
+    let authApi = null;
+    let authUser = null; // ★ 로그인 사용자 캐시
+
+    if (useFirebase){
+      const inited = window.__firebaseInit();
       fs = inited;
       authApi = inited.auth;
     }
@@ -173,7 +173,7 @@
 
     // ===== 저장 =====
     async function saveEntry(data){
-      const payload = { ...data, confirmed: false }; // 기본은 미확정
+      const payload = { ...data, confirmed: false };
       if (useFirebase){
         const col = fs.collection(fs.db,'entries');
         const ref = await fs.addDoc(col, { ...payload, createdAt: fs.serverTimestamp() });
@@ -203,7 +203,7 @@
       }
     }
 
-    // ===== 불러오기 (+마이그레이션: id/confirmed 보장) =====
+    // ===== 불러오기 =====
     async function loadEntries(){
       if (useFirebase){
         const col = fs.collection(fs.db,'entries');
@@ -256,35 +256,23 @@
       $('#phone').value='';
     });
 
-    // ===== 전화번호 입력 마스킹 (3-4-4 / 4-3-4 / 4-4-4 / 4-4-4-4 지원) =====
+    // ===== 전화번호 마스킹 =====
     $('#phone')?.addEventListener('input', (e)=>{
-      const raw = e.target.value.replace(/[^0-9]/g,'').slice(0,16); // 최대 16자리
-      const isMobile3 = raw.startsWith('010') || raw.startsWith('011') ||
-                        raw.startsWith('016') || raw.startsWith('017') ||
-                        raw.startsWith('018') || raw.startsWith('019');
-
+      const raw = e.target.value.replace(/[^0-9]/g,'').slice(0,16);
+      const isMobile3 = /^01[016789]/.test(raw);
       let v = raw;
 
       if (raw.length <= 3) {
-        // 그대로
       } else if (raw.length <= 7) {
-        if (isMobile3) {
-          v = raw.slice(0,3) + '-' + raw.slice(3);
-        } else {
-          v = raw.slice(0,4) + '-' + raw.slice(4);
-        }
+        v = isMobile3 ? raw.slice(0,3)+'-'+raw.slice(3) : raw.slice(0,4)+'-'+raw.slice(4);
       } else if (raw.length <= 11) {
-        if (isMobile3) {
-          v = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7);
-        } else {
-          v = raw.slice(0,4) + '-' + raw.slice(4,7) + '-' + raw.slice(7);
-        }
+        v = isMobile3 ? (raw.slice(0,3)+'-'+raw.slice(3,7)+'-'+raw.slice(7))
+                      : (raw.slice(0,4)+'-'+raw.slice(4,7)+'-'+raw.slice(7));
       } else if (raw.length <= 12) {
-        v = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8);
+        v = raw.slice(0,4)+'-'+raw.slice(4,8)+'-'+raw.slice(8);
       } else {
-        v = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8,12) + '-' + raw.slice(12);
+        v = raw.slice(0,4)+'-'+raw.slice(4,8)+'-'+raw.slice(8,12)+'-'+raw.slice(12);
       }
-
       e.target.value = v;
     });
 
@@ -298,7 +286,6 @@
       if (!name) return [false,'이름을 입력해주세요'];
       if (age && (isNaN(Number(age)) || Number(age) < 0 || Number(age) > 120)) return [false,'나이를 0~120 사이 숫자로 입력'];
 
-      // 허용: 3-4-4(11), 4-3-4(11), 4-4-4(12), 4-4-4-4(16)
       if (!(digitsOnly.length===11 || digitsOnly.length===12 || digitsOnly.length===16))
         return [false,'전화번호는 3-4-4 / 4-3-4 / 4-4-4 / 4-4-4-4 형식이어야 합니다'];
 
@@ -350,24 +337,15 @@
     // ===== 렌더링 =====
     async function render(){
       const container = $('#list');
-      // 로그인 검증: Firebase 사용 시에만 적용. (로컬스토리지 모드면 계속 보임)
+
+      // 로그인 확인: Firebase 사용 시
       if (useFirebase){
-        const user = authApi.currentUser();
-        // 목록 접근 차단
-        if (!user){
+        if (!authUser){
           container.innerHTML = `
             <div class="muted" style="display:flex;align-items:center;gap:8px">
               목록은 <strong>로그인한 사용자</strong>만 볼 수 있어요. 오른쪽 상단의 <em>Google 로그인</em> 버튼을 눌러 주세요.
             </div>`;
-          // 상단 상태도 갱신
-          $('#authStatus').textContent = '로그인 필요';
-          $('#authBtn').textContent = 'Google 로그인';
           return;
-        } else {
-          // 로그인 상태 표시
-          const prof = user.providerData?.[0];
-          $('#authStatus').textContent = prof?.email || user.email || '로그인됨';
-          $('#authBtn').textContent = '로그아웃';
         }
       }
 
@@ -395,7 +373,7 @@
       container.innerHTML = html;
     }
 
-    // 카드 템플릿
+    // 항목 카드
     function itemHTML(r){
       const pressed = r.confirmed ? 'true' : 'false';
       const onClass = r.confirmed ? 'on' : '';
@@ -468,13 +446,12 @@
       }
     }
 
-    // ====== Auth UI ======
+    // ===== Auth UI =====
     const authBtn = $('#authBtn');
     authBtn?.addEventListener('click', async ()=>{
       if (!useFirebase) return;
-      const user = authApi.currentUser();
       try{
-        if (user){
+        if (authUser){
           await authApi.signOut();
         }else{
           await authApi.signInWithGoogle();
@@ -485,8 +462,19 @@
       }
     });
 
-    // 최초 렌더
-    render();
+    // ★★★ 초기 렌더링: 로그인 상태가 결정될 때만 실행
+    if (useFirebase){
+      authApi.onAuthStateChanged((u)=>{
+        authUser = u;
+        const status = $('#authStatus');
+        const btn = $('#authBtn');
+        if (status) status.textContent = u ? (u.email || '로그인됨') : '로그인 필요';
+        if (btn) btn.textContent = u ? '로그아웃' : 'Google 로그인';
+        render();
+      });
+    } else {
+      render(); // 로컬스토리지 모드
+    }
   </script>
 
   <!-- ===== Firebase SDK + 초기화 ===== -->
@@ -497,7 +485,7 @@
     // 공유 저장소 사용 ON
     window.__USE_FIREBASE__ = true;
 
-    // 우리 코드가 기대하는 초기화 함수
+    // 초기화 함수
     window.__firebaseInit = function(){
       const firebaseConfig = {
         apiKey: "AIzaSyAm76AFTjWcxzeENXeMqDfKygkrESNoFkM",
@@ -508,29 +496,12 @@
       const db = firebase.firestore();
       const auth = firebase.auth();
 
-      // --- Auth helpers (compat) ---
+      // Auth helpers
       const provider = new firebase.auth.GoogleAuthProvider();
-      function signInWithGoogle(){
-        return auth.signInWithPopup(provider);
-      }
-      function signOut(){
-        return auth.signOut();
-      }
-      function currentUser(){
-        return auth.currentUser;
-      }
-      // 상태 변화 시 목록/헤더 갱신
-      auth.onAuthStateChanged(()=>{
-        const u = currentUser();
-        const status = document.getElementById('authStatus');
-        const btn = document.getElementById('authBtn');
-        if (status) status.textContent = u ? (u.email || '로그인됨') : '로그인 필요';
-        if (btn) btn.textContent = u ? '로그아웃' : 'Google 로그인';
-        // 목록 다시 그림 (비로그인->로그인 전환 시)
-        if (typeof window !== 'undefined' && typeof render === 'function'){
-          render();
-        }
-      });
+      function signInWithGoogle(){ return auth.signInWithPopup(provider); }
+      function signOut(){ return auth.signOut(); }
+      function currentUser(){ return auth.currentUser; }
+      function onAuthStateChanged(cb){ return auth.onAuthStateChanged(cb); } // ★ 추가
 
       return {
         db,
@@ -545,7 +516,7 @@
         updateDoc: (docRef, data) => docRef.update(data),
 
         // Auth helpers
-        auth: { signInWithGoogle, signOut, currentUser }
+        auth: { signInWithGoogle, signOut, currentUser, onAuthStateChanged }
       };
     };
   </script>
