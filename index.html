@@ -32,7 +32,6 @@
     .item{display:flex;flex-direction:column;gap:6px;background:white;border:1px solid #d1d5db;border-radius:14px;padding:12px;margin-bottom:8px}
     .chip{display:inline-flex;align-items:center;gap:6px;background:#f3f4f6;border:1px dashed #d1d5db;color:#374151;border-radius:999px;padding:6px 10px;font-size:12px}
     .meta{display:flex;flex-wrap:wrap;gap:6px}
-    .time{color:var(--muted);font-size:12px}
     .empty{color:var(--muted);font-size:14px;}
     .sticky{position:sticky;top:0;z-index:10;background:var(--bg)}
     .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
@@ -91,7 +90,6 @@
   </div>
 
   <script type="module">
-    // ===== 저장소 레이어 (Firestore 없으면 localStorage) =====
     const useFirebase = !!window.__USE_FIREBASE__ && typeof window.__firebaseInit === 'function';
     let fs = null;
     if (useFirebase){ fs = window.__firebaseInit(); }
@@ -134,7 +132,6 @@
       }
     }
 
-    // ===== UI 상태 =====
     let state = { person: '효주', gender: '여', filter: 'ALL' };
     const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
     const $ = (sel,ctx=document)=>ctx.querySelector(sel);
@@ -148,24 +145,22 @@
         })
       })
     }
+
     bindSingleSelect('.person','person');
     bindSingleSelect('.gender','gender');
 
-    // ===== 입력 초기화 =====
     $('#clear').addEventListener('click', ()=>{
       $('#name').value='';
       $('#age').value='';
       $('#phone').value='';
     });
 
-    // ===== 전화번호 입력: 숫자만, 최대 16자리, 4-4-4(-4)로 자동 하이픈 =====
     $('#phone').addEventListener('input', (e)=>{
-      const digits = e.target.value.replace(/[^0-9]/g,'').slice(0,16); // 숫자 최대 16자
-      const parts = digits.match(/\d{1,4}/g) || []; // 1~4자리씩 분할
-      e.target.value = parts.join('-'); // 4자리 단위로 하이픈 연결
+      const digits = e.target.value.replace(/[^0-9]/g,'').slice(0,16);
+      const parts = digits.match(/\d{1,4}/g) || [];
+      e.target.value = parts.join('-');
     });
 
-    // ===== 유효성 검사 =====
     function validate(){
       const name = $('#name').value.trim();
       const age = $('#age').value.trim();
@@ -174,19 +169,15 @@
 
       if (!name) return [false,'이름을 입력해주세요'];
       if (age && (isNaN(Number(age)) || Number(age) < 0 || Number(age) > 120)) return [false,'나이를 0~120 사이 숫자로 입력'];
-
-      // 4자리 단위 하이픈: 12자리(4-4-4) 또는 16자리(4-4-4-4)만 통과
       if (!(digitsOnly.length === 12 || digitsOnly.length === 16)){
         return [false,'전화번호는 12자리(0000-1111-2222) 또는 16자리(0000-1111-2222-3333) 형식이어야 합니다'];
       }
       if (!/^\d{4}(-\d{4}){2,3}$/.test(phone)){
         return [false,'전화번호는 4자리-4자리-4자리(-4자리) 형식이어야 합니다'];
       }
-
       return [true,{ name, age: age?Number(age):null, phone }];
     }
 
-    // ===== 등록 =====
     $('#submit').addEventListener('click', async ()=>{
       const [ok, data] = validate();
       if (!ok){ alert(data); return; }
@@ -202,7 +193,6 @@
       }
     });
 
-    // ===== 필터 버튼 (목록 카드 내부) =====
     $$('.filter').forEach(b=>b.addEventListener('click',()=>{
       $$('.filter').forEach(x=>x.classList.remove('primary'));
       b.classList.add('primary');
@@ -210,14 +200,12 @@
       render();
     }));
 
-    // ===== 렌더링 =====
     async function render(){
       const container = $('#list');
       container.innerHTML = '<div class="muted">불러오는 중...</div>';
       let rows = await loadEntries();
-      rows.sort((a,b)=> b.createdAt - a.createdAt); // 최신순 고정
+      rows.sort((a,b)=> a.name.localeCompare(b.name, 'ko'));
       if (state.filter !== 'ALL') rows = rows.filter(r=>r.person===state.filter);
-
       const groups = ['효주','영숙','수경'];
       const html = groups
         .filter(g=> state.filter==='ALL' ? true : g===state.filter)
@@ -245,7 +233,6 @@
       </div>`
     }
 
-    // 초기 렌더
     render();
   </script>
 </body>
