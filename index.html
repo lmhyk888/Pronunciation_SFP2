@@ -43,13 +43,13 @@
       <h1>항목 업로드</h1>
       <div class="hr"></div>
 
-      <!-- 선택: 효주/영숙/수경 (필수, 버튼식) -->
+      <!-- 선택: 김효주/김영숙/권수경 (필수, 버튼식) -->
       <div class="section">
         <div class="muted" style="margin-bottom:6px">담당자</div>
         <div class="btn-group" role="group" aria-label="담당자">
-          <button class="btn person" data-value="효주" aria-pressed="true">효주</button>
-          <button class="btn person" data-value="영숙" aria-pressed="false">영숙</button>
-          <button class="btn person" data-value="수경" aria-pressed="false">수경</button>
+          <button class="btn person" data-value="김효주" aria-pressed="true">김효주</button>
+          <button class="btn person" data-value="김영숙" aria-pressed="false">김영숙</button>
+          <button class="btn person" data-value="권수경" aria-pressed="false">권수경</button>
         </div>
       </div>
 
@@ -80,9 +80,9 @@
         <h2 style="margin:0;font-size:18px">목록</h2>
         <div class="btn-group" role="group" aria-label="보기 필터">
           <button class="btn filter primary" data-filter="ALL">전체</button>
-          <button class="btn filter" data-filter="효주">효주</button>
-          <button class="btn filter" data-filter="영숙">영숙</button>
-          <button class="btn filter" data-filter="수경">수경</button>
+          <button class="btn filter" data-filter="김효주">김효주</button>
+          <button class="btn filter" data-filter="김영숙">김영숙</button>
+          <button class="btn filter" data-filter="권수경">권수경</button>
         </div>
       </div>
       <div id="list"></div>
@@ -132,7 +132,7 @@
       }
     }
 
-    let state = { person: '효주', gender: '여', filter: 'ALL' };
+    let state = { person: '김효주', gender: '여', filter: 'ALL' };
     const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
     const $ = (sel,ctx=document)=>ctx.querySelector(sel);
 
@@ -206,7 +206,7 @@
       let rows = await loadEntries();
       rows.sort((a,b)=> a.name.localeCompare(b.name, 'ko'));
       if (state.filter !== 'ALL') rows = rows.filter(r=>r.person===state.filter);
-      const groups = ['효주','영숙','수경'];
+      const groups = ['김효주','김영숙','권수경'];
       const html = groups
         .filter(g=> state.filter==='ALL' ? true : g===state.filter)
         .map(g=>{
