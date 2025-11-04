@@ -95,6 +95,7 @@
     if (useFirebase){ fs = window.__firebaseInit(); }
 
     const STORAGE_KEY = 'entries.v1';
+    const PERSON_ALIASES = { '효주':'김효주', '영숙':'김영숙', '수경':'권수경' };
 
     async function saveEntry(data){
       if (useFirebase){
@@ -118,13 +119,28 @@
         snap.forEach(doc=>{
           const d = doc.data();
           rows.push({
-            person: d.person,
+            person: PERSON_ALIASES[d.person] || d.person,
             name: d.name,
             gender: d.gender,
             age: d.age,
             phone: d.phone,
             createdAt: d.createdAt?.toMillis?.() ?? Date.now()
           })
+        });
+        return rows;
+      } else {
+        // localStorage - 기존 데이터 마이그레이션(효주/영숙/수경 → 김효주/김영숙/권수경)
+        const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let changed = false;
+        const migrated = list.map(r=>{
+          const newPerson = PERSON_ALIASES[r.person] || r.person;
+          if (newPerson !== r.person) changed = true;
+          return { ...r, person: newPerson };
+        });
+        if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+    })
         });
         return rows;
       } else {
