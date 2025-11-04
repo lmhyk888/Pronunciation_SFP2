@@ -22,15 +22,10 @@
     body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Apple SD Gothic Neo,Noto Sans KR,sans-serif;color:var(--text);background:linear-gradient(180deg,#f8fafc, #fff 20%)}
     .wrap{max-width:960px;margin:0 auto;padding:20px}
 
-    /* Title bar */
-    .titlebar{display:flex;align-items:center;gap:10px;}
-    .titlebadge{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#ffedd5,#fed7aa);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
-
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
     .p16{padding:16px} .p20{padding:22px}
     h1{font-size:24px;margin:0}
     .muted{color:var(--muted);font-size:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
 
     /* Buttons */
     .btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--text);padding:10px 16px;border-radius:999px;cursor:pointer;font-size:15px;line-height:1;box-shadow:0 1px 1px rgba(0,0,0,.03)}
@@ -38,24 +33,19 @@
     .btn[aria-pressed="true"], .btn.primary{background:var(--active);border-color:var(--active);color:#fff;box-shadow:0 6px 20px rgba(241,90,41,.25)}
     .btn:active{transform:translateY(0)}
     .btn:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(249,115,22,.35)}
-    .btn.small{padding:8px 12px;font-size:14px}
 
-    /* Form grid */
+    /* Layout */
     .grid{display:grid;grid-template-columns:1fr;gap:12px}
     @media(min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+    .section{margin-top:16px}
+    .actions{display:flex;gap:10px;margin-top:14px}
+    .submit{background:var(--active);border:0;color:white}
 
     /* Inputs */
     .field{display:flex;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;transition:border-color .2s, box-shadow .2s}
     .field:focus-within{border-color:var(--active);box-shadow:0 0 0 3px rgba(241,90,41,.15)}
     .field label{min-width:64px;color:var(--muted);font-size:14px}
     .field input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:16px}
-
-    .section{margin-top:16px}
-    .actions{display:flex;gap:10px;margin-top:14px}
-    .submit{background:var(--active);border:0;color:white}
-    .reset{background:#fff;border:1px solid var(--line)}
-
-    .hr{height:1px;background:var(--line);margin:16px 0}
 
     /* List */
     .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
@@ -72,28 +62,28 @@
   <div class="wrap">
     <div class="card p20 sticky">
       <h1>항목 업로드</h1>
-      <div class="hr"></div>
+      <div class="hr" style="height:1px;background:var(--line);margin:16px 0"></div>
 
-      <!-- 선택: 김효주/김영숙/권수경 (필수, 버튼식) -->
+      <!-- 담당자 선택 -->
       <div class="section">
         <div class="muted" style="margin-bottom:6px">담당자</div>
-        <div class="btn-group" role="group" aria-label="담당자">
+        <div class="btn-group" role="group" aria-label="담당자" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn person" data-value="김효주" aria-pressed="true">김효주</button>
           <button class="btn person" data-value="김영숙" aria-pressed="false">김영숙</button>
           <button class="btn person" data-value="권수경" aria-pressed="false">권수경</button>
         </div>
       </div>
 
-      <!-- 성별: 남/여 (버튼식) -->
+      <!-- 성별 선택 -->
       <div class="section">
         <div class="muted" style="margin-bottom:6px">성별</div>
-        <div class="btn-group" role="group" aria-label="성별">
+        <div class="btn-group" role="group" aria-label="성별" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn gender" data-value="여" aria-pressed="true">여</button>
           <button class="btn gender" data-value="남" aria-pressed="false">남</button>
         </div>
       </div>
 
-      <!-- 입력 칸: 이름, 나이, 전화번호 -->
+      <!-- 입력 칸 -->
       <div class="section grid">
         <div class="field"><label>이름</label><input id="name" placeholder="예: 김철수" autocomplete="name" /></div>
         <div class="field"><label>나이</label><input id="age" type="number" inputmode="numeric" placeholder="예: 28" min="0" max="120" /></div>
@@ -102,14 +92,14 @@
 
       <div class="actions">
         <button id="submit" class="btn submit">등록</button>
-        <button id="clear" class="btn reset">입력 초기화</button>
+        <button id="clear" class="btn">입력 초기화</button>
       </div>
     </div>
 
     <div class="card p16" style="margin-top:12px">
       <div class="toolbar">
         <h2 style="margin:0;font-size:18px">목록</h2>
-        <div class="btn-group" role="group" aria-label="보기 필터">
+        <div class="btn-group" role="group" aria-label="보기 필터" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn filter primary" data-filter="ALL">전체</button>
           <button class="btn filter" data-filter="김효주">김효주</button>
           <button class="btn filter" data-filter="김영숙">김영숙</button>
@@ -121,12 +111,14 @@
   </div>
 
   <script type="module">
+    // ===== Firebase 사용 여부 (켜면 여러 기기에서 같은 목록 공유) =====
     const useFirebase = !!window.__USE_FIREBASE__ && typeof window.__firebaseInit === 'function';
     let fs = null;
     if (useFirebase){ fs = window.__firebaseInit(); }
 
     const STORAGE_KEY = 'entries.v1';
 
+    // ===== 저장 =====
     async function saveEntry(data){
       if (useFirebase){
         const col = fs.collection(fs.db,'entries');
@@ -140,6 +132,7 @@
       }
     }
 
+    // ===== 불러오기 =====
     async function loadEntries(){
       if (useFirebase){
         const col = fs.collection(fs.db,'entries');
@@ -148,14 +141,7 @@
         const rows = [];
         snap.forEach(doc=>{
           const d = doc.data();
-          rows.push({
-            person: d.person,
-            name: d.name,
-            gender: d.gender,
-            age: d.age,
-            phone: d.phone,
-            createdAt: d.createdAt?.toMillis?.() ?? Date.now()
-          })
+          rows.push({ person:d.person, name:d.name, gender:d.gender, age:d.age, phone:d.phone, createdAt:d.createdAt?.toMillis?.() ?? Date.now() })
         });
         return rows;
       } else {
@@ -163,6 +149,7 @@
       }
     }
 
+    // ===== 상태 & 헬퍼 =====
     let state = { person: '김효주', gender: '여', filter: 'ALL' };
     const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
     const $ = (sel,ctx=document)=>ctx.querySelector(sel);
@@ -176,10 +163,10 @@
         })
       })
     }
-
     bindSingleSelect('.person','person');
     bindSingleSelect('.gender','gender');
 
+    // 입력 초기화
     $('#clear').addEventListener('click', ()=>{
       $('#name').value='';
       $('#age').value='';
@@ -193,21 +180,18 @@
       if (v.length <= 4) {
         // 4
       } else if (v.length <= 7) {
-        // 4-1~3  → 4-3 진행 중
-        v = v.slice(0,4) + '-' + v.slice(4);
+        v = v.slice(0,4) + '-' + v.slice(4);              // 4-3
       } else if (v.length <= 11) {
-        // 4-3-최대4  (목표: 4-3-4)
-        v = v.slice(0,4) + '-' + v.slice(4,7) + '-' + v.slice(7);
+        v = v.slice(0,4) + '-' + v.slice(4,7) + '-' + v.slice(7); // 4-3-4
       } else if (v.length <= 12) {
-        // 4-4-최대4  (목표: 4-4-4)
-        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8);
+        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8); // 4-4-4
       } else {
-        // 13~16 → 4-4-4-나머지 (최대 4)
-        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8,12) + '-' + v.slice(12);
+        v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8,12) + '-' + v.slice(12); // 4-4-4-4
       }
       e.target.value = v;
     });
 
+    // 유효성 검사
     function validate(){
       const name = $('#name').value.trim();
       const age = $('#age').value.trim();
@@ -217,16 +201,14 @@
       if (!name) return [false,'이름을 입력해주세요'];
       if (age && (isNaN(Number(age)) || Number(age) < 0 || Number(age) > 120)) return [false,'나이를 0~120 사이 숫자로 입력'];
 
-      // 허용: 4-3-4 (11자리) / 4-4-4 (12자리) / 4-4-4-4 (16자리)
-      if (!(digitsOnly.length===11 || digitsOnly.length===12 || digitsOnly.length===16)){
-        return [false,'전화번호는 4-3-4 / 4-4-4 / 4-4-4-4 형식이어야 합니다'];
-      }
-      if (!/^\d{4}-(\d{3}|\d{4})-\d{4}(-\d{4})?$/.test(phone)){
-        return [false,'전화번호는 4-3(또는 4)-4(-4) 형식이어야 합니다'];
-      }
+      // 허용: 4-3-4 (11) / 4-4-4 (12) / 4-4-4-4 (16)
+      if (!(digitsOnly.length===11 || digitsOnly.length===12 || digitsOnly.length===16)) return [false,'전화번호는 4-3-4 / 4-4-4 / 4-4-4-4 형식이어야 합니다'];
+      if (!/^\d{4}-(\d{3}|\d{4})-\d{4}(-\d{4})?$/.test(phone)) return [false,'전화번호는 4-3(또는4)-4(-4) 형식이어야 합니다'];
+
       return [true,{ name, age: age?Number(age):null, phone }];
     }
 
+    // 등록
     $('#submit').addEventListener('click', async ()=>{
       const [ok, data] = validate();
       if (!ok){ alert(data); return; }
@@ -242,6 +224,7 @@
       }
     });
 
+    // 필터 버튼
     $$('.filter').forEach(b=>b.addEventListener('click',()=>{
       $$('.filter').forEach(x=>x.classList.remove('primary'));
       b.classList.add('primary');
@@ -249,6 +232,7 @@
       render();
     }));
 
+    // 렌더링
     async function render(){
       const container = $('#list');
       container.innerHTML = '<div class="muted">불러오는 중...</div>';
@@ -260,19 +244,15 @@
         .filter(g=> state.filter==='ALL' ? true : g===state.filter)
         .map(g=>{
           const items = rows.filter(r=>r.person===g);
-          const listHtml = items.length===0
-            ? '<div class="empty">항목이 없습니다</div>'
-            : items.map(r=> itemHTML(r)).join('');
+          const listHtml = items.length===0 ? '<div class="muted">항목이 없습니다</div>' : items.map(r=> itemHTML(r)).join('');
           return `<div class="group"><h3>${g}</h3>${listHtml}</div>`
         }).join('');
-      container.innerHTML = html || '<div class="empty">등록된 항목이 없습니다.</div>';
+      container.innerHTML = html || '<div class="muted">등록된 항목이 없습니다.</div>';
     }
 
     function itemHTML(r){
       return `<div class="item">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div style="font-weight:600">${r.name || '(이름없음)'}</div>
-        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:600">${r.name || '(이름없음)'}</div></div>
         <div class="meta">
           <span class="chip">담당: ${r.person}</span>
           <span class="chip">성별: ${r.gender}</span>
@@ -283,6 +263,43 @@
     }
 
     render();
+  </script>
+
+  <!-- ===== Firebase SDK + 초기화: 공유 저장소 사용 (쓰기 모두 허용하려면 콘솔 규칙도 열어두세요) ===== -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
+  <script>
+    // 공유 저장소 사용 ON
+    window.__USE_FIREBASE__ = true;
+
+    // Firestore 규칙은 콘솔에서 읽기/쓰기 허용으로 설정해야 합니다.
+    // (프로토타입 규칙 예시)
+    // rules_version = '2';
+    // service cloud.firestore {
+    //   match /databases/{database}/documents {
+    //     match /{document=**} { allow read, write: if true; }
+    //   }
+    // }
+
+    // 우리 코드가 기대하는 초기화 함수
+    window.__firebaseInit = function(){
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID"
+      };
+      const app = firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      return {
+        db,
+        collection: (db, name) => db.collection(name),
+        addDoc: (col, data) => col.add(data),
+        getDocs: (q) => q.get(),
+        serverTimestamp: () => firebase.firestore.FieldValue.serverTimestamp(),
+        orderBy: (field, dir) => ({ field, dir }),
+        query: (col, ord) => col.orderBy(ord.field, ord.dir),
+      };
+    };
   </script>
 </body>
 </html>
