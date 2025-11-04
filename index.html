@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>업로드 폼</title>
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#22c55e;--accent2:#3b82f6;--danger:#ef4444;--chip:#1f2937;--chipOn:#2563eb}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:900px;margin:0 auto;padding:20px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .p16{padding:16px} .p20{padding:20px}
+    h1{font-size:22px;margin:0 0 12px}
+    .muted{color:var(--muted);font-size:14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid #334155;background:#0b1220;color:var(--text);padding:10px 14px;border-radius:999px;cursor:pointer;font-size:16px}
+    .btn[aria-pressed="true"], .btn.primary{background:var(--chipOn);border-color:transparent;color:white}
+    .btn:active{transform:scale(.98)}
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}
+    .field{display:flex;align-items:center;background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:10px 12px}
+    .field label{min-width:64px;color:var(--muted);font-size:14px}
+    .field input, .field select{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:16px}
+    .section{margin-top:14px}
+    .actions{display:flex;gap:10px;margin-top:12px}
+    .submit{background:var(--accent);border:0;color:#073b1a}
+    .reset{background:#0b1220;border:1px solid #334155}
+    .hr{height:1px;background:#1f2937;margin:16px 0}
+    /* 리스트 */
+    .group{margin-top:18px}
+    .group h3{margin:0 0 8px;font-size:18px;color:#cbd5e1}
+    .item{display:flex;flex-direction:column;gap:6px;background:#0b1220;border:1px solid #1f2937;border-radius:14px;padding:12px;margin-bottom:8px}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#0b1220;border:1px dashed #334155;color:#cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px}
+    .meta{display:flex;flex-wrap:wrap;gap:6px}
+    .time{color:var(--muted);font-size:12px}
+    .empty{color:var(--muted);font-size:14px;}
+    .sticky{position:sticky;top:0;z-index:10}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card p20 sticky">
+      <h1>항목 업로드</h1>
+      <div class="muted">휴대폰 최적화 • GitHub Pages에서 바로 사용 가능 • 효주/영숙/수경으로 분류</div>
+      <div class="hr"></div>
+
+      <!-- 선택: 효주/영숙/수경 (필수, 버튼식) -->
+      <div class="section">
+        <div class="muted" style="margin-bottom:6px">담당자</div>
+        <div class="btn-group" role="group" aria-label="담당자">
+          <button class="btn person" data-value="효주" aria-pressed="true">효주</button>
+          <button class="btn person" data-value="영숙" aria-pressed="false">영숙</button>
+          <button class="btn person" data-value="수경" aria-pressed="false">수경</button>
+        </div>
+      </div>
+
+      <!-- 성별: 남/여 (버튼식) -->
+      <div class="section">
+        <div class="muted" style="margin-bottom:6px">성별</div>
+        <div class="btn-group" role="group" aria-label="성별">
+          <button class="btn gender" data-value="여" aria-pressed="true">여</button>
+          <button class="btn gender" data-value="남" aria-pressed="false">남</button>
+        </div>
+      </div>
+
+      <!-- 입력 칸: 이름, 나이, 지역, 전화번호 (텍스트/숫자 입력 가능) -->
+      <div class="section grid">
+        <div class="field"><label>이름</label><input id="name" placeholder="예: 김철수" autocomplete="name" /></div>
+        <div class="field"><label>나이</label><input id="age" type="number" inputmode="numeric" placeholder="예: 28" min="0" max="120" /></div>
+        <div class="field"><label>지역</label><input id="region" placeholder="예: 서울" /></div>
+        <div class="field" style="grid-column:1/-1"><label>전화</label><input id="phone" placeholder="010-1234-5678" inputmode="tel" /></div>
+      </div>
+
+      <div class="actions">
+        <button id="submit" class="btn submit">등록</button>
+        <button id="clear" class="btn reset">입력 초기화</button>
+      </div>
+
+      <div class="hr"></div>
+      <div class="row">
+        <div class="btn-group" role="group" aria-label="보기 필터">
+          <button class="btn filter primary" data-filter="ALL">전체</button>
+          <button class="btn filter" data-filter="효주">효주</button>
+          <button class="btn filter" data-filter="영숙">영숙</button>
+          <button class="btn filter" data-filter="수경">수경</button>
+        </div>
+        <div class="btn-group" role="group" aria-label="정렬">
+          <button class="btn sort" data-sort="new">최신순</button>
+          <button class="btn sort" data-sort="old">오래된순</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p16" style="margin-top:12px">
+      <h2 style="margin:0 0 8px;font-size:18px">목록</h2>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <!-- Firebase (선택): Firestore로 저장하려면 아래 스크립트 주석 해제 후 config 입력 -->
+  <!--
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    window.__USE_FIREBASE__ = true; // Firestore 사용 여부
+    window.__firebaseInit = () => {
+      const firebaseConfig = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+      };
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      return { db, collection, addDoc, getDocs, query, orderBy, serverTimestamp };
+    };
+  </script>
+  -->
+
+  <script type="module">
+    // ======== 저장소 레이어: Firestore가 없으면 localStorage로 동작 ========
+    const useFirebase = !!window.__USE_FIREBASE__ && typeof window.__firebaseInit === 'function';
+    let fs = null;
+    if (useFirebase){ fs = window.__firebaseInit(); }
+
+    const STORAGE_KEY = 'entries.v1';
+
+    async function saveEntry(data){
+      if (useFirebase){
+        const col = fs.collection(fs.db,'entries');
+        await fs.addDoc(col, { ...data, createdAt: fs.serverTimestamp() });
+        return true;
+      } else {
+        const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        list.push({ ...data, createdAt: Date.now() });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        return true;
+      }
+    }
+
+    async function loadEntries(){
+      if (useFirebase){
+        const col = fs.collection(fs.db,'entries');
+        const q = fs.query(col, fs.orderBy('createdAt','desc'));
+        const snap = await fs.getDocs(q);
+        const rows = [];
+        snap.forEach(doc=>{
+          const d = doc.data();
+          rows.push({
+            person: d.person,
+            name: d.name,
+            gender: d.gender,
+            age: d.age,
+            region: d.region,
+            phone: d.phone,
+            createdAt: d.createdAt?.toMillis?.() ?? Date.now()
+          })
+        });
+        return rows;
+      } else {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      }
+    }
+
+    // ======== UI 상태 ========
+    let state = {
+      person: '효주',
+      gender: '여',
+      filter: 'ALL',
+      sort: 'new'
+    };
+
+    const $$ = (sel,ctx=document)=>Array.from(ctx.querySelectorAll(sel));
+    const $ = (sel,ctx=document)=>ctx.querySelector(sel);
+
+    // 토글 버튼 그룹 처리 (단일 선택)
+    function bindSingleSelect(selector, stateKey){
+      $$(selector).forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          $$(selector).forEach(b=>b.setAttribute('aria-pressed','false'));
+          btn.setAttribute('aria-pressed','true');
+          state[stateKey] = btn.dataset.value;
+        })
+      })
+    }
+
+    bindSingleSelect('.person','person');
+    bindSingleSelect('.gender','gender');
+
+    // 입력 초기화
+    $('#clear').addEventListener('click', ()=>{
+      $('#name').value='';
+      $('#age').value='';
+      $('#region').value='';
+      $('#phone').value='';
+    });
+
+    // 전화 하이픈 보정 (간단)
+    $('#phone').addEventListener('input', (e)=>{
+      let v = e.target.value.replace(/[^0-9]/g,'');
+      if (v.startsWith('02')){
+        if (v.length>2) v = v.replace(/^(02)(\d{3,4})(\d{4}).*/,'$1-$2-$3');
+      } else {
+        if (v.length>3) v = v.replace(/^(\d{3})(\d{3,4})(\d{4}).*/,'$1-$2-$3');
+      }
+      e.target.value = v;
+    });
+
+    // 유효성 검사
+    function validate(){
+      const name = $('#name').value.trim();
+      const age = $('#age').value.trim();
+      const region = $('#region').value.trim();
+      const phone = $('#phone').value.trim();
+      if (!name) return [false,'이름을 입력해주세요'];
+      if (age && (isNaN(Number(age)) || Number(age) < 0 || Number(age) > 120)) return [false,'나이를 0~120 사이 숫자로 입력'];
+      if (!region) return [false,'지역을 입력해주세요'];
+      if (!/^(01\d-\d{3,4}-\d{4}|02-\d{3,4}-\d{4})$/.test(phone)) return [false,'전화번호 형식을 확인해주세요'];
+      return [true,{ name, age: age?Number(age):null, region, phone }];
+    }
+
+    // 등록
+    $('#submit').addEventListener('click', async ()=>{
+      const [ok, data] = validate();
+      if (!ok){ alert(data); return; }
+      const payload = {
+        person: state.person,
+        gender: state.gender,
+        ...data
+      };
+      try{
+        await saveEntry(payload);
+        alert('등록되었습니다!');
+        $('#clear').click();
+        await render();
+      }catch(err){
+        console.error(err);
+        alert('저장 중 오류가 발생했습니다');
+      }
+    });
+
+    // 필터/정렬 버튼
+    $$('.filter').forEach(b=>b.addEventListener('click',()=>{
+      $$('.filter').forEach(x=>x.classList.remove('primary'));
+      b.classList.add('primary');
+      state.filter = b.dataset.filter;
+      render();
+    }));
+
+    $$('.sort').forEach(b=>b.addEventListener('click',()=>{
+      $$('.sort').forEach(x=>x.classList.remove('primary'));
+      b.classList.add('primary');
+      state.sort = b.dataset.sort;
+      render();
+    }));
+
+    // 렌더링 (담당자별 그룹)
+    async function render(){
+      const container = $('#list');
+      container.innerHTML = '<div class="muted">불러오는 중...</div>';
+      let rows = await loadEntries();
+
+      // 정렬
+      rows.sort((a,b)=> state.sort==='new' ? (b.createdAt - a.createdAt) : (a.createdAt - b.createdAt));
+
+      // 필터
+      if (state.filter !== 'ALL') rows = rows.filter(r=>r.person===state.filter);
+
+      // 그룹화: 효주/영숙/수경 순
+      const groups = ['효주','영숙','수경'];
+      const html = groups
+        .filter(g=> state.filter==='ALL' ? true : g===state.filter)
+        .map(g=>{
+          const items = rows.filter(r=>r.person===g);
+          const listHtml = items.length===0
+            ? '<div class="empty">항목이 없습니다</div>'
+            : items.map(r=> itemHTML(r)).join('');
+          return `<div class="group"><h3>${g}</h3>${listHtml}</div>`
+        }).join('');
+
+      container.innerHTML = html || '<div class="empty">등록된 항목이 없습니다.</div>';
+    }
+
+    function itemHTML(r){
+      const time = new Date(r.createdAt);
+      const ts = `${time.getFullYear()}-${String(time.getMonth()+1).padStart(2,'0')}-${String(time.getDate()).padStart(2,'0')} ${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
+      return `<div class="item">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-weight:600">${r.name || '(이름없음)'}</div>
+          <div class="time">${ts}</div>
+        </div>
+        <div class="meta">
+          <span class="chip">담당: ${r.person}</span>
+          <span class="chip">성별: ${r.gender}</span>
+          ${r.age?`<span class=\"chip\">나이: ${r.age}</span>`:""}
+          <span class="chip">지역: ${r.region}</span>
+          <span class="chip">전화: ${r.phone}</span>
+        </div>
+      </div>`
+    }
+
+    // 초기 렌더
+    render();
+  </script>
+</body>
+</html>
