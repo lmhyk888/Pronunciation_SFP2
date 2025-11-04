@@ -24,7 +24,7 @@
     .field input, .field select{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:16px}
     .section{margin-top:14px}
     .actions{display:flex;gap:10px;margin-top:12px}
-    .submit{background:var(--accent);border:0;color:white}
+    .submit{background:var(--active);border:0;color:white}
     .reset{background:white;border:1px solid #d1d5db}
     .hr{height:1px;background:#e5e7eb;margin:16px 0}
     .group{margin-top:18px}
@@ -232,19 +232,15 @@
     }
 
     function itemHTML(r){
-      const time = new Date(r.createdAt);
-      const ts = `${time.getFullYear()}-${String(time.getMonth()+1).padStart(2,'0')}-${String(time.getDate()).padStart(2,'0')} ${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
-      const telDigits = (r.phone || '').replace(/[^0-9]/g,'');
       return `<div class="item">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div style="font-weight:600">${r.name || '(이름없음)'}</div>
-          <div class="time">${ts}</div>
         </div>
         <div class="meta">
           <span class="chip">담당: ${r.person}</span>
           <span class="chip">성별: ${r.gender}</span>
           ${r.age?`<span class=\"chip\">나이: ${r.age}</span>`:""}
-          <a class="chip" href="tel:${telDigits}">전화: ${r.phone}</a>
+          <a class="chip" href="tel:${(r.phone || '').replace(/[^0-9]/g,'')}">전화: ${r.phone}</a>
         </div>
       </div>`
     }
